@@ -407,9 +407,9 @@ const AgendaTimeline = ({ items, onNext }: { items: AgendaItem[], onNext: () => 
         key={item.id}
         className={`flex-1 p-2 rounded-lg ${
           item.status === 'in_progress'
-            ? 'bg-blue-100 border-b-2 border-blue-500'
-            : item.status === 'completed'
             ? 'bg-green-100 border-b-2 border-green-500'
+            : item.status === 'completed'
+            ? 'bg-gray-200 border-b-2 border-gray-400'
             : 'bg-gray-100'
         }`}
       >
@@ -417,8 +417,8 @@ const AgendaTimeline = ({ items, onNext }: { items: AgendaItem[], onNext: () => 
           <TooltipTrigger asChild>
             <div className="flex items-center justify-between">
               <span className="font-medium text-sm truncate">{item.title}</span>
-              {item.status === 'completed' && <CheckCircle className="h-4 w-4 text-green-500" />}
-              {item.status === 'in_progress' && <Circle className="h-4 w-4 text-blue-500" />}
+              {item.status === 'completed' && <CheckCircle className="h-4 w-4 text-gray-500" />}
+              {item.status === 'in_progress' && <Circle className="h-4 w-4 text-green-500" />}
             </div>
           </TooltipTrigger>
           <TooltipContent>
@@ -830,7 +830,6 @@ function FacilitatorDashboard() {
     if (!selectedMeeting) return
     dispatch({ type: 'SET_LOADING', payload: true })
     try {
-      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000))
       dispatch({ type: 'START_MEETING' })
       setMeetings(prevMeetings => prevMeetings.map(meeting => 
@@ -853,7 +852,6 @@ function FacilitatorDashboard() {
     if (!selectedMeeting) return
     dispatch({ type: 'SET_LOADING', payload: true })
     try {
-      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000))
       dispatch({ type: 'END_MEETING' })
       setMeetings(prevMeetings => prevMeetings.map(meeting => 
