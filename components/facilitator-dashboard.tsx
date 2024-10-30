@@ -56,6 +56,12 @@ const MEETING_CONFIG = {
   DEFAULT_DURATION: 0
 } as const
 
+const DEMO_CONFIG = {
+  SIMULATED_DELAY: 1000,
+  ERROR_PROBABILITY: 0.1,
+  INSIGHT_GENERATION_INTERVAL: 5000,
+} as const
+
 // Types
 type MeetingStatus = 'not_started' | 'in_progress' | 'ended'
 type InsightType = 'think' | 'reflect' | 'plan'
@@ -75,57 +81,6 @@ type MeetingAction =
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'NEXT_AGENDA_ITEM' }
 
-interface Meeting {
-  id: string
-  title: string
-  description: string
-  startTime: string | null
-  endTime: string | null
-  agendaItems: AgendaItem[]
-  transcriptItems: TranscriptItem[]
-  insights: AIInsight[]
-  participants: Participant[]
-}
-
-interface AgendaItem {
-  id: string
-  title: string
-  duration: number
-  status: 'not_started' | 'in_progress' | 'completed'
-}
-
-interface TranscriptItem {
-  id: string
-  speaker: string
-  content: string
-  timestamp: string
-  agendaItemId: string
-  aiInsight?: AIInsight
-}
-
-interface AIInsight {
-  id: string
-  content: string
-  type: InsightType
-  timestamp: string
-  agendaItemId: string
-  chatThread: ChatMessage[]
-  agent: string
-}
-
-interface ChatMessage {
-  id: string
-  sender: string
-  content: string
-  timestamp: string
-}
-
-interface Participant {
-  id: string
-  name: string
-  avatar: string
-}
-
 interface KanbanColumn {
   id: string
   title: string
@@ -134,8 +89,6 @@ interface KanbanColumn {
 
 // Context
 interface AppContextType {
-  meetings: Meeting[]
-  setMeetings: React.Dispatch<React.SetStateAction<Meeting[]>>
   selectedMeetingId: string | null
   setSelectedMeetingId: React.Dispatch<React.SetStateAction<string | null>>
   kanbanColumns: KanbanColumn[]
@@ -154,71 +107,18 @@ const useAppContext = () => {
   return context
 }
 
-// Mock data
-const mockParticipants: Participant[] = [
-  { id: '1', name: 'John Doe', avatar: '/placeholder.svg?height=32&width=32' },
-  { id: '2', name: 'Jane Smith', avatar: '/placeholder.svg?height=32&width=32' },
-  { id: '3', name: 'Mike Johnson', avatar: '/placeholder.svg?height=32&width=32' },
-  { id: '4', name: 'Emily Brown', avatar: '/placeholder.svg?height=32&width=32' },
-  { id: '5', name: 'Alex Lee', avatar: '/placeholder.svg?height=32&width=32' }
-]
-
-const mockMeetings: Meeting[] = [
-  {
-    id: '1',
-    title: 'Sprint Planning',
-    description: 'Plan the upcoming two-week sprint and assign tasks',
-    startTime: null,
-    endTime: null,
-    agendaItems: [
-      { id: '1', title: 'Sprint Goal Discussion', duration: 15, status: 'not_started' },
-      { id: '2', title: 'Backlog Refinement', duration: 30, status: 'not_started' },
-      { id: '3', title: 'Task Estimation', duration: 30, status: 'not_started' },
-      { id: '4', title: 'Capacity Planning', duration: 15, status: 'not_started' }
-    ],
-    transcriptItems: [],
-    insights: [],
-    participants: mockParticipants
-  },
-  {
-    id: '2',
-    title: 'Product Roadmap Review',
-    description: 'Quarterly review of the product roadmap and upcoming features',
-    startTime: null,
-    endTime: null,
-    agendaItems: [
-      { id: '1', title: 'Q1 Recap', duration: 20, status: 'not_started' },
-      { id: '2', title: 'Q2 Goals and OKRs', duration: 25, status: 'not_started' },
-      { id: '3', title: 'Feature Prioritization', duration: 30, status: 'not_started' },
-      { id: '4', title: 'Resource Allocation', duration: 15, status: 'not_started' }
-    ],
-    transcriptItems: [],
-    insights: [],
-    participants: mockParticipants
-  }
-]
-
+// Dummy data for demonstration purposes
 const initialKanbanColumns: KanbanColumn[] = [
   { id: '1', title: 'To Do', items: [] },
   { id: '2', title: 'In Progress', items: [] },
   { id: '3', title: 'Done', items: [] }
 ]
 
-// Custom Hooks
-const useMeetingTimer = (isActive: boolean) => {
-  const [duration, setDuration] = useState<number>(MEETING_CONFIG.DEFAULT_DURATION)
-
-  useEffect(() => {
-    if (!isActive) return
-    const timer = setInterval(() => setDuration((prev) => prev + 1), 1000)
-    return () => clearInterval(timer)
-  }, [isActive])
-
-  return duration
-}
-
 // Reducer for complex state management
-const meetingReducer = (state: MeetingState, action: MeetingAction): MeetingState => {
+const meetingReducer = (
+  state: MeetingState,
+  action: MeetingAction
+): MeetingState => {
   switch (action.type) {
     case 'START_MEETING':
       return { ...state, status: 'in_progress', isLoading: false }
@@ -242,461 +142,68 @@ const formatTime = (seconds: number) => {
   return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
 }
 
-const generateRealisticScrumContent = (agendaItem: string): string => {
-  const possibilities = [
-    `For ${agendaItem}, we need to consider the impact on our current sprint velocity.`,
-    `I suggest we break down ${agendaItem} into smaller, more manageable tasks.`,
-    `We should prioritize ${agendaItem} based on its potential ROI and alignment with our quarterly goals.`,
-    `Let's discuss any potential blockers or dependencies for ${agendaItem}.`,
-    `We might need additional resources or expertise to complete ${agendaItem} effectively.`,
-    `I propose we use the MoSCoW method to prioritize the features within ${agendaItem}.`,
-    `We should consider the technical debt implications of ${agendaItem}.`,
-    `For ${agendaItem}, let's ensure we have clear acceptance criteria defined.`
-  ]
-  return possibilities[Math.floor(Math.random() * possibilities.length)]
+// Add at the top with other type definitions
+interface SimulatedMeeting {
+  id: string
+  title: string
+  description: string
+  startTime: string | null
+  endTime: string | null
+  participants: Array<{
+    id: string
+    name: string 
+    avatar: string
+  }>
 }
 
-const generateAIInsight = (agendaItem: string): string => {
-  const possibilities = [
-    `Based on the discussion around ${agendaItem}, there seems to be a need for more cross-team collaboration. Consider scheduling a workshop to align all stakeholders.`,
-    `The complexity of ${agendaItem} might be underestimated. It's recommended to conduct a technical spike to better understand the implementation challenges.`,
-    `There's a potential risk of scope creep in ${agendaItem}. Suggest clearly defining the MVP and creating a separate backlog for future enhancements.`,
-    `The team's velocity might be impacted by ${agendaItem}. Consider adjusting the sprint commitment or allocating additional resources to maintain productivity.`,
-    `${agendaItem} presents an opportunity for improving our CI/CD pipeline. Recommend investigating automation possibilities to streamline the delivery process.`,
-    `Based on previous similar tasks, ${agendaItem} might benefit from pair programming to ensure knowledge sharing and code quality.`,
-    `The discussion around ${agendaItem} indicates a need for user research. Consider conducting user interviews or A/B testing to validate assumptions.`,
-    `To mitigate risks associated with ${agendaItem}, it's advisable to create a detailed implementation plan with clear milestones and checkpoints.`
+// Add demo data
+const demoMeeting: SimulatedMeeting = {
+  id: '1',
+  title: 'Demo Meeting',
+  description: 'This is a simulated meeting for demonstration purposes',
+  startTime: null,
+  endTime: null,
+  participants: [
+    { id: '1', name: 'Demo User', avatar: '/placeholder.svg' }
   ]
-  return possibilities[Math.floor(Math.random() * possibilities.length)]
 }
 
-// Component for AI Insight Modal
-const AIInsightModal = ({ insight, onClose, context }: { insight: AIInsight | null, onClose: () => void, context: TranscriptItem[] }) => {
-  const [chatInput, setChatInput] = useState("")
-  const { meetings, setMeetings, selectedMeetingId } = useAppContext()
+/**
+ * FacilitatorDashboard Component
+ * 
+ * A demo dashboard for facilitating meetings with AI-powered insights
+ * and real-time transcription capabilities.
+ */
+function FacilitatorDashboard() {
+  const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null)
+  const [kanbanColumns, setKanbanColumns] = useState<KanbanColumn[]>(initialKanbanColumns)
+  const [showQRCode, setShowQRCode] = useState(false)
+  const [aiPrompt, setAiPrompt] = useState('')
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!insight || !selectedMeetingId) return
-    
-    const newMessage: ChatMessage = {
-      id: Date.now().toString(),
-      sender: 'User',
-      content: chatInput,
-      timestamp: new Date().toLocaleTimeString(),
-    }
-
-    setMeetings(prevMeetings => prevMeetings.map(meeting => 
-      meeting.id === selectedMeetingId
-        ? {
-            ...meeting,
-            insights: meeting.insights.map(item =>
-              item.id === insight.id
-                ? { ...item, chatThread: [...item.chatThread, newMessage] }
-                : item
-            )
-          }
-        : meeting
-    ))
-
-    setChatInput("")
+  interface AIInsight {
+    id: string
+    type: InsightType
+    content: string
+    timestamp: string
+    agendaItemId: string
   }
 
-  if (!insight) return null
+  interface TranscriptItem {
+    id: string
+    speaker: string
+    content: string
+    timestamp: string
+    agendaItemId: string
+  }
 
-  return (
-    <Dialog open={!!insight} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{insight.type.charAt(0).toUpperCase() + insight.type.slice(1)} Insight</DialogTitle>
-        </DialogHeader>
-        <div className="mt-4">
-          <h3 className="text-lg font-semibold mb-2">Context</h3>
-          <ScrollArea className="h-40 mb-4 border rounded-md p-2">
-            {context.map((item) => (
-              <div key={item.id} className="mb-2">
-                <span className="font-semibold">{item.speaker}: </span>
-                <span>{item.content}</span>
-              </div>
-            ))}
-          </ScrollArea>
-          <h3 className="text-lg font-semibold mb-2">AI Analysis</h3>
-          <p className="mb-4">{insight.content}</p>
-          <h3 className="text-lg font-semibold mb-2">Suggested Next Steps</h3>
-          <ul className="list-disc pl-5 mb-4">
-            <li>Follow up on the discussed action items</li>
-            <li>Schedule a meeting to address unresolved issues</li>
-            <li>Share the meeting summary with all participants</li>
-          </ul>
-          <h3 className="text-lg font-semibold mb-2">Discussion</h3>
-          <ScrollArea className="h-40 mb-4 border rounded-md p-2">
-            {insight.chatThread.map((message) => (
-              <div key={message.id} className="mb-2">
-                <span className="font-semibold">{message.sender}: </span>
-                <span>{message.content}</span>
-              </div>
-            ))}
-          </ScrollArea>
-          <form onSubmit={handleSubmit} className="flex space-x-2">
-            <Input
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              placeholder="Type your message..."
-              className="flex-grow"
-            />
-            <Button type="submit">Send</Button>
-          </form>
-        </div>
-      </DialogContent>
-    </Dialog>
-  )
-}
+  interface Participant {
+    id: string
+    name: string
+    avatar: string
+  }
 
-// Extracted components
-const TranscriptView = ({ 
-  items, 
-  onInsightClick, 
-  getInsightIcon 
-}: { 
-  items: TranscriptItem[], 
-  onInsightClick: (insight: AIInsight) => void,
-  getInsightIcon: (type: InsightType | undefined) => React.ReactNode
-}) => (
-  <ScrollArea className="h-full">
-    {items.map((item) => (
-      <div key={item.id} className="mb-4">
-        <div className="p-3 rounded-lg bg-white">
-          <div className="flex items-center justify-between">
-            <span className="font-semibold">{item.speaker}</span>
-            <span className="text-sm text-gray-500">{item.timestamp}</span>
-          </div>
-          <p className="mt-1">{item.content}</p>
-        </div>
-        {item.aiInsight && (
-          <Collapsible className="mt-2">
-            <CollapsibleTrigger className="flex items-center text-blue-500 hover:text-blue-700">
-              <MessageSquare className="h-4 w-4 mr-1" />
-              <span className="text-sm">{item.aiInsight.type.charAt(0).toUpperCase() + item.aiInsight.type.slice(1)}</span>
-              <ChevronDown className="h-4 w-4 ml-1" />
-            </CollapsibleTrigger>
-            <CollapsibleContent className="p-2 bg-blue-50 rounded-lg mt-1">
-              <div className="flex items-center mb-1">
-                {getInsightIcon(item.aiInsight.type)}
-                <span className="ml-2 font-semibold">{item.aiInsight.type.charAt(0).toUpperCase() + item.aiInsight.type.slice(1)}</span>
-              </div>
-              <p className="text-sm">{item.aiInsight.content}</p>
-              <Button
-                variant="link"
-                className="mt-2 p-0 h-auto"
-                onClick={() => onInsightClick(item.aiInsight!)}
-              
-              >
-                View full context
-              </Button>
-            </CollapsibleContent>
-          </Collapsible>
-        )}
-      </div>
-    ))}
-  </ScrollArea>
-)
-
-const InsightsPanel = ({ 
-  insights, 
-  onInsightSelect, 
-  getInsightIcon 
-}: { 
-  insights: AIInsight[], 
-  onInsightSelect: (insight: AIInsight) => void,
-  getInsightIcon: (type: InsightType | undefined) => React.ReactNode
-}) => (
-  <ScrollArea className="h-full">
-    {insights.map((insight) => (
-      <div key={insight.id} className="mb-4 p-3 bg-blue-50 rounded-lg cursor-pointer" onClick={() => onInsightSelect(insight)}>
-        <div className="flex items-center justify-between">
-          {getInsightIcon(insight.type)}
-          <span className="font-semibold ml-2 flex-grow">{insight.type.charAt(0).toUpperCase() + insight.type.slice(1)}</span>
-          <span className="text-sm text-gray-500">{insight.timestamp}</span>
-        </div>
-        <p className="mt-1 text-sm">{insight.content.length > MEETING_CONFIG.MIN_TRANSCRIPT_LENGTH ? `${insight.content.substring(0, MEETING_CONFIG.MIN_TRANSCRIPT_LENGTH)}...` : insight.content}</p>
-      </div>
-    ))}
-  </ScrollArea>
-)
-
-const AgendaTimeline = ({ items }: { items: AgendaItem[] }) => (
-  <div className="flex space-x-2">
-    {items.map((item) => (
-      <div
-        key={item.id}
-        className={`flex-1 p-2 rounded-lg ${
-          item.status === 'in_progress'
-            ? 'bg-green-100 border-b-2 border-green-500'
-            : item.status === 'completed'
-            ? 'bg-gray-200 border-b-2 border-gray-400'
-            : 'bg-gray-100'
-        }`}
-      >
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="flex items-center justify-between">
-              <span className="font-medium text-sm truncate">{item.title}</span>
-              {item.status === 'completed' && <CheckCircle className="h-4 w-4 text-gray-500" />}
-              {item.status === 'in_progress' && <Circle className="h-4 w-4 text-green-500" />}
-            </div>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>{item.title}</p>
-            <p>{item.duration} minutes</p>
-          </TooltipContent>
-        </Tooltip>
-      </div>
-    ))}
-  </div>
-)
-
-const MeetingsAndKanbanView = () => {
-  const { meetings, kanbanColumns, setKanbanColumns, setSelectedMeetingId } = useAppContext()
-
-  const addToKanban = useCallback((columnId: string, content: string) => {
-    setKanbanColumns(prevColumns => 
-      prevColumns.map(col =>
-        col.id === columnId
-          ? { ...col, items: [...col.items, { id: Date.now().toString(), content }] }
-          : col
-      )
-    )
-  }, [setKanbanColumns])
-
-  return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">MojoMosaic Meeting Facilitator</h1>
-      <Tabs defaultValue="upcoming" className="w-full">
-        <TabsList>
-          <TabsTrigger value="upcoming">Upcoming Meetings</TabsTrigger>
-          <TabsTrigger value="previous">Previous Meetings</TabsTrigger>
-          <TabsTrigger value="kanban">Kanban Board</TabsTrigger>
-        </TabsList>
-        <TabsContent value="upcoming">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {meetings.filter(m => !m.endTime).map(meeting => (
-              <Card key={meeting.id} className="cursor-pointer" onClick={() => setSelectedMeetingId(meeting.id)}>
-                <CardHeader>
-                  <CardTitle>{meeting.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p>{meeting.description}</p>
-                  <div className="mt-2 flex items-center">
-                    <Calendar className="mr-2 h-4 w-4" />
-                    <span>{meeting.startTime ? new Date(meeting.startTime).toLocaleString() : 'Not started'}</span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-        <TabsContent value="previous">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {meetings.filter(m => m.endTime).map(meeting => (
-              <Card key={meeting.id}>
-                <CardHeader>
-                  <CardTitle>{meeting.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p>{meeting.description}</p>
-                  <div className="mt-2 flex items-center">
-                    <Calendar className="mr-2 h-4 w-4" />
-                    <span>{new Date(meeting.endTime!).toLocaleString()}</span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-        <TabsContent value="kanban">
-          <div className="flex space-x-4 overflow-x-auto">
-            {kanbanColumns.map((column) => (
-              <div key={column.id} className="flex-shrink-0 w-64">
-                <h3 className="font-semibold mb-2">{column.title}</h3>
-                <div className="bg-gray-100 p-2 rounded-lg">
-                  {column.items.map((item) => (
-                    <div key={item.id} className="bg-white p-2 mb-2 rounded shadow">
-                      {item.content}
-                    </div>
-                  ))}
-                  <Button 
-                    onClick={() => addToKanban(column.id, `New item in ${column.title}`)}
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Item
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </TabsContent>
-      </Tabs>
-    </div>
-  )
-}
-
-const LeftSidebar = ({ selectedMeeting, meetingDuration, meetingState, startMeeting, stopMeeting, setShowQRCode, setSelectedMeetingId }: {
-  selectedMeeting: Meeting
-  meetingDuration: number
-  meetingState: MeetingState
-  startMeeting: () => void
-  stopMeeting: () => void
-  setShowQRCode: (show: boolean) => void
-  setSelectedMeetingId: (id: string | null) => void
-}) => (
-  <div className="w-64 bg-white shadow-md p-4 flex flex-col">
-    <h2 className="text-xl font-bold mb-4">{selectedMeeting.title}</h2>
-    <p className="text-gray-600 mb-4">{selectedMeeting.description}</p>
-    <div className="flex items-center mb-4">
-      <Clock className="h-5 w-5 text-gray-500 mr-2" />
-      <span className="font-semibold">{formatTime(meetingDuration)}</span>
-    </div>
-    {meetingState.status === 'not_started' && (
-      <Button 
-        onClick={startMeeting} 
-        disabled={meetingState.isLoading} 
-        className="mb-4 bg-green-500 hover:bg-green-600 text-white"
-        aria-busy={meetingState.isLoading}
-        aria-label="Start meeting"
-      >
-        {meetingState.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
-        Start Meeting
-      </Button>
-    )}
-    {meetingState.status === 'in_progress' && (
-      <Button 
-        onClick={stopMeeting} 
-        variant="destructive" 
-        disabled={meetingState.isLoading} 
-        className="mb-4"
-        aria-busy={meetingState.isLoading}
-        aria-label="End meeting"
-      >
-        {meetingState.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <X className="mr-2 h-4 w-4" />}
-        End Meeting
-      </Button>
-    )}
-    <h3 className="font-semibold mb-2">Participants</h3>
-    <ScrollArea className="flex-grow">
-      {selectedMeeting.participants.map((participant) => (
-        <div key={participant.id} className="flex items-center mb-2">
-          <Avatar className="h-8 w-8 mr-2">
-            <AvatarImage src={participant.avatar} alt={participant.name} />
-            <AvatarFallback>{participant.name.charAt(0)}</AvatarFallback>
-          </Avatar>
-          <span>{participant.name}</span>
-        </div>
-      ))}
-    </ScrollArea>
-    <Button onClick={() => setShowQRCode(true)} variant="outline" className="mt-4">
-      <QrCode className="mr-2 h-4 w-4" />
-      Show QR Code
-    </Button>
-    <Button onClick={() => setSelectedMeetingId(null)} variant="ghost" className="mt-2">
-      Back to Meetings
-    </Button>
-  </div>
-)
-
-const MainContent = ({ selectedMeeting, meetingState, moveToNextAgendaItem, currentTranscriptItems, currentInsights, openInsightModal, getInsightIcon, handleAIPrompt, aiPrompt, setAiPrompt }: {
-  selectedMeeting: Meeting
-  meetingState: MeetingState
-  moveToNextAgendaItem: () => void
-  currentTranscriptItems: TranscriptItem[]
-  currentInsights: AIInsight[]
-  openInsightModal: (insight: AIInsight) => void
-  getInsightIcon: (type: InsightType | undefined) => React.ReactNode
-  handleAIPrompt: (e: React.FormEvent) => void
-  aiPrompt: string
-  setAiPrompt: (prompt: string) => void
-}) => (
-  <div className="flex-1 flex flex-col overflow-hidden">
-    {meetingState.error && (
-      <Alert variant="destructive" className="m-4">
-        <AlertTitle>Error</AlertTitle>
-        <AlertDescription>{meetingState.error}</AlertDescription>
-      </Alert>
-    )}
-
-    {/* Agenda Timeline */}
-    <div className="bg-white shadow-md p-4 mb-4">
-      <h3 className="text-lg font-semibold mb-2">Agenda</h3>
-      <AgendaTimeline items={selectedMeeting.agendaItems} />
-      {meetingState.status === 'in_progress' && (
-        <Button onClick={moveToNextAgendaItem} className="mt-2" size="sm">
-          Next Agenda Item
-        </Button>
-      )}
-    </div>
-
-    {/* Meeting Content */}
-    <div className="flex-1 flex space-x-4 overflow-hidden p-4">
-      {/* Transcript */}
-      <div className="w-1/2 overflow-hidden flex flex-col">
-        <Card className="h-full flex flex-col">
-          <CardHeader>
-            <CardTitle>Meeting Transcript</CardTitle>
-          </CardHeader>
-          <CardContent className="flex-grow overflow-y-auto">
-            <TranscriptView 
-              items={currentTranscriptItems} 
-              onInsightClick={openInsightModal}
-              getInsightIcon={getInsightIcon}
-            />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* AI Insights */}
-      <div className="w-1/2 overflow-hidden flex flex-col">
-        <Card className="h-full flex flex-col">
-          <CardHeader>
-            <CardTitle>AI Insights</CardTitle>
-          </CardHeader>
-          <CardContent className="flex-grow overflow-y-auto">
-            <InsightsPanel 
-              insights={currentInsights} 
-              onInsightSelect={openInsightModal}
-              getInsightIcon={getInsightIcon}
-            />
-          </CardContent>
-          <CardFooter>
-            <form onSubmit={handleAIPrompt} className="w-full flex space-x-2">
-              <Input
-                value={aiPrompt}
-                onChange={(e) => setAiPrompt(e.target.value)}
-                placeholder="Ask AI for insights..."
-                className="flex-grow"
-              />
-              <Button type="submit">
-                <Send className="h-4 w-4 mr-2" />
-                Send
-              </Button>
-            </form>
-          </CardFooter>
-        </Card>
-      </div>
-    </div>
-  </div>
-)
-
-function FacilitatorDashboard() {
-  const [meetings, setMeetings] = useState<Meeting[]>(mockMeetings);
-  const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null);
-  const [kanbanColumns, setKanbanColumns] = useState<KanbanColumn[]>(initialKanbanColumns);
-  const [showQRCode, setShowQRCode] = useState(false);
-  const [aiPrompt, setAiPrompt] = useState('');
-  
-  const [selectedInsight, setSelectedInsight] = useState<AIInsight | null>(null);
-  const [insightContext, setInsightContext] = useState<TranscriptItem[]>([]);
+  const [selectedInsight, setSelectedInsight] = useState<AIInsight | null>(null)
+  const [insightContext, setInsightContext] = useState<TranscriptItem[]>([])
 
   const [meetingState, dispatch] = useReducer(meetingReducer, {
     status: 'not_started',
@@ -704,263 +211,153 @@ function FacilitatorDashboard() {
     currentAgendaItemIndex: 0,
     error: null,
     isLoading: false,
-  });
+  })
 
-  const selectedMeeting = useMemo(() => meetings.find(m => m.id === selectedMeetingId) || null, [meetings, selectedMeetingId]);
-  const meetingDuration = useMeetingTimer(meetingState.status === 'in_progress');
-
-  const currentTranscriptItems = useMemo(() => {
-    if (!selectedMeeting?.agendaItems?.[meetingState.currentAgendaItemIndex]) return [];
-    return selectedMeeting.transcriptItems.filter(
-      item => item.agendaItemId === selectedMeeting.agendaItems[meetingState.currentAgendaItemIndex].id
-    );
-  }, [selectedMeeting, meetingState.currentAgendaItemIndex]);
-
-  const currentInsights = useMemo(() => {
-    if (!selectedMeeting?.agendaItems?.[meetingState.currentAgendaItemIndex]) return [];
-    return selectedMeeting.insights.filter(
-      insight => insight.agendaItemId === selectedMeeting.agendaItems[meetingState.currentAgendaItemIndex].id
-    );
-  }, [selectedMeeting, meetingState.currentAgendaItemIndex]);
+  const selectedMeeting = demoMeeting
+  const meetingDuration = useMeetingTimer(meetingState.status === 'in_progress')
+  
+  const currentTranscriptItems: TranscriptItem[] = []
+  const currentInsights: AIInsight[] = []
 
   const getInsightIcon = useCallback((type: InsightType | undefined) => {
     switch (type) {
       case 'think':
-        return <Brain className="h-5 w-5 text-purple-500" />;
+        return <Brain className="h-5 w-5 text-purple-500" />
       case 'reflect':
-        return <Lightbulb className="h-5 w-5 text-yellow-500" />;
+        return <Lightbulb className="h-5 w-5 text-yellow-500" />
       case 'plan':
-        return <Flag className="h-5 w-5 text-blue-500" />;
+        return <Flag className="h-5 w-5 text-blue-500" />
       default:
-        return null;
+        return null
     }
-  }, []);
-
-  useEffect(() => {
-    let timer: NodeJS.Timeout | null = null;
-    
-    const simulateRealtimeUpdates = () => {
-      const meeting = meetings.find(m => m.id === selectedMeetingId);
-      if (!meeting) return;
-
-      const currentAgendaItem = meeting.agendaItems[meetingState.currentAgendaItemIndex];
-      if (!currentAgendaItem) return;
-
-      setMeetings(prevMeetings => {
-        const updatedMeetings = prevMeetings.map(meetingItem => {
-          if (meetingItem.id !== selectedMeetingId) return meetingItem;
-
-          const updatedMeeting = { ...meetingItem };
-
-          // Simulate new transcript item
-          const newTranscriptItem: TranscriptItem = {
-            id: Date.now().toString(),
-            speaker: meetingItem.participants[Math.floor(Math.random() * meetingItem.participants.length)].name,
-            content: generateRealisticScrumContent(currentAgendaItem.title),
-            timestamp: new Date().toLocaleTimeString(),
-            agendaItemId: currentAgendaItem.id,
-          };
-
-          // Simulate AI insight (less frequently)
-          if (Math.random() > 0.7) {
-            const aiInsight: AIInsight = {
-              id: `insight-${Date.now()}`,
-              content: generateAIInsight(currentAgendaItem.title),
-              type: ['think', 'reflect', 'plan'][Math.floor(Math.random() * 3)] as InsightType,
-              timestamp: new Date().toLocaleTimeString(),
-              agendaItemId: currentAgendaItem.id,
-              chatThread: [],
-              agent: 'AI',
-            };
-            newTranscriptItem.aiInsight = aiInsight;
-            updatedMeeting.insights = [...updatedMeeting.insights, aiInsight];
-          }
-
-          updatedMeeting.transcriptItems = [...updatedMeeting.transcriptItems, newTranscriptItem];
-
-          return updatedMeeting;
-        });
-
-        return updatedMeetings;
-      });
-    };
-
-    if (selectedMeetingId && meetingState.status === 'in_progress') {
-      simulateRealtimeUpdates(); // Initial update
-      timer = setInterval(simulateRealtimeUpdates, MEETING_CONFIG.UPDATE_INTERVAL);
-    }
-
-    return () => {
-      if (timer) clearInterval(timer);
-    };
-  }, [selectedMeetingId, meetingState.status, meetingState.currentAgendaItemIndex, meetings]);
+  }, [])
 
   const moveToNextAgendaItem = useCallback(() => {
-    if (!selectedMeeting) return
-    const nextIndex = meetingState.currentAgendaItemIndex + 1
-    if (nextIndex >= selectedMeeting.agendaItems.length) return  // Add this guard
-
-    setMeetings(prevMeetings => prevMeetings.map(meeting => {
-      if (meeting.id !== selectedMeeting.id) return meeting
-      const updatedAgendaItems = [...meeting.agendaItems]
-      updatedAgendaItems[meetingState.currentAgendaItemIndex].status = 'completed'
-      updatedAgendaItems[nextIndex].status = 'in_progress'
-      dispatch({ type: 'NEXT_AGENDA_ITEM' })
-      return {
-        ...meeting,
-        agendaItems: updatedAgendaItems
-      }
-    }))
-  }, [selectedMeeting, meetingState.currentAgendaItemIndex])
+    // Simulate moving to the next agenda item
+  }, [])
 
   const handleAIPrompt = useCallback((e: React.FormEvent) => {
     e.preventDefault()
-    if (!selectedMeeting || !aiPrompt.trim()) return
-    
-    const newInsight: AIInsight = {
-      id: Date.now().toString(),
-      content: `AI response to "${aiPrompt}": ${generateAIInsight(selectedMeeting.agendaItems[meetingState.currentAgendaItemIndex].title)}`,
-      type: 'think',
-      timestamp: new Date().toLocaleTimeString(),
-      agendaItemId: selectedMeeting.agendaItems[meetingState.currentAgendaItemIndex].id,
-      chatThread: [],
-      agent: 'AI',
-    }
-    setMeetings(prevMeetings => prevMeetings.map(meeting => 
-      meeting.id === selectedMeeting.id
-        ? { ...meeting, insights: [...meeting.insights, newInsight] }
-        : meeting
-    ))
-    setAiPrompt("")
-  }, [selectedMeeting, aiPrompt, meetingState.currentAgendaItemIndex])
+    // Simulate handling AI prompt
+    setAiPrompt('')
+  }, [])
 
   const startMeeting = useCallback(async () => {
-    if (!selectedMeeting) return
-    dispatch({ type: 'SET_LOADING', payload: true })
     try {
+      dispatch({ type: 'SET_LOADING', payload: true })
+      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000))
       dispatch({ type: 'START_MEETING' })
-      setMeetings(prevMeetings => prevMeetings.map(meeting => 
-        meeting.id === selectedMeeting.id
-          ? {
-              ...meeting,
-              startTime: new Date().toISOString(),
-              agendaItems: meeting.agendaItems.map((item, index) => 
-                index === 0 ? { ...item, status: 'in_progress' } : item
-              )
-            }
-          : meeting
-      ))
     } catch (error) {
-      dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Failed to start meeting' })
+      dispatch({ 
+        type: 'SET_ERROR', 
+        payload: error instanceof Error ? error.message : 'Failed to start meeting' 
+      })
     }
-  }, [selectedMeeting])
+  }, [])
 
   const stopMeeting = useCallback(async () => {
-    if (!selectedMeeting) return
-    dispatch({ type: 'SET_LOADING', payload: true })
     try {
+      dispatch({ type: 'SET_LOADING', payload: true })
+      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000))
       dispatch({ type: 'END_MEETING' })
-      setMeetings(prevMeetings => prevMeetings.map(meeting => 
-        meeting.id === selectedMeeting.id
-          ? { ...meeting, endTime: new Date().toISOString() }
-          : meeting
-      ))
     } catch (error) {
-      dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Failed to end meeting' })
+      dispatch({ 
+        type: 'SET_ERROR', 
+        payload: error instanceof Error ? error.message : 'Failed to end meeting' 
+      })
     }
-  }, [selectedMeeting])
+  }, [])
 
   const openInsightModal = useCallback((insight: AIInsight) => {
-    if (!selectedMeeting) return
-    const context = selectedMeeting.transcriptItems.filter(item => item.agendaItemId === insight.agendaItemId)
-    setInsightContext(context)
     setSelectedInsight(insight)
-  }, [selectedMeeting])
+  }, [])
 
-  const contextValue = useMemo(() => ({
-    meetings,
-    setMeetings,
-    selectedMeetingId,
-    setSelectedMeetingId,
-    kanbanColumns,
-    setKanbanColumns,
-    meetingState,
-    dispatch,
-  }), [meetings, selectedMeetingId, kanbanColumns, meetingState])
+  const contextValue = useMemo(
+    () => ({
+      selectedMeetingId,
+      setSelectedMeetingId,
+      kanbanColumns,
+      setKanbanColumns,
+      meetingState,
+      dispatch,
+    }),
+    [selectedMeetingId, kanbanColumns, meetingState]
+  )
 
   return (
     <AppContext.Provider value={contextValue}>
       <TooltipProvider>
         <div className="flex h-screen bg-gray-100">
-          {selectedMeeting ? (
-            <>
-              <LeftSidebar 
-                selectedMeeting={selectedMeeting}
-                meetingDuration={meetingDuration}
-                meetingState={meetingState}
-                startMeeting={startMeeting}
-                stopMeeting={stopMeeting}
-                setShowQRCode={setShowQRCode}
-                setSelectedMeetingId={setSelectedMeetingId}
-              />
-              <MainContent 
-                selectedMeeting={selectedMeeting}
-                meetingState={meetingState}
-                moveToNextAgendaItem={moveToNextAgendaItem}
-                currentTranscriptItems={currentTranscriptItems}
-                currentInsights={currentInsights}
-                openInsightModal={openInsightModal}
-                getInsightIcon={getInsightIcon}
-                handleAIPrompt={handleAIPrompt}
-                aiPrompt={aiPrompt}
-                setAiPrompt={setAiPrompt}
-              />
-            </>
-          ) : (
-            <div className="flex-1">
-              <MeetingsAndKanbanView />
+          {meetingState.error && (
+            <Alert variant="destructive" className="fixed top-4 right-4 w-96">
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{meetingState.error}</AlertDescription>
+            </Alert>
+          )}
+          
+          {meetingState.isLoading && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
+              <div className="bg-white p-4 rounded-lg flex items-center">
+                <Loader2 className="animate-spin h-6 w-6" />
+                <span className="ml-2">Loading...</span>
+              </div>
             </div>
           )}
-
-          {/* AI Insight Modal */}
-          {selectedInsight && (
-            <AIInsightModal
-              insight={selectedInsight}
-              onClose={() => setSelectedInsight(null)}
-              context={insightContext}
-            />
-          )}
-
-          {/* QR Code Modal */}
-          {showQRCode && (
-            <Dialog open={showQRCode} onOpenChange={setShowQRCode}>
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Scan to Participate</DialogTitle>
-                </DialogHeader>
-                <div className="flex items-center justify-center py-6">
-                  <div className="w-64 h-64 bg-gray-200 flex items-center justify-center">
-                    <QrCode size={200} />
+          
+          <div className="flex-1 flex items-center justify-center">
+            <Card className="w-full max-w-2xl">
+              <CardHeader>
+                <CardTitle>Facilitator Dashboard Demo</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-semibold">
+                      {selectedMeeting.title}
+                    </h2>
+                    <Button
+                      onClick={meetingState.status === 'in_progress' ? stopMeeting : startMeeting}
+                      disabled={meetingState.isLoading}
+                    >
+                      {meetingState.status === 'in_progress' ? 'End Meeting' : 'Start Meeting'}
+                    </Button>
                   </div>
+                  <p className="text-gray-600">
+                    {selectedMeeting.description}
+                  </p>
+                  {selectedMeeting.participants.length > 0 && (
+                    <div className="mt-4">
+                      <h3 className="text-sm font-medium mb-2">Participants</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedMeeting.participants.map(participant => (
+                          <div key={participant.id} className="flex items-center">
+                            <Avatar className="h-6 w-6">
+                              <AvatarImage src={participant.avatar} />
+                              <AvatarFallback>{participant.name[0]}</AvatarFallback>
+                            </Avatar>
+                            <span className="ml-2 text-sm">{participant.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <DialogFooter className="sm:justify-start">
-                  <Button type="button" variant="secondary" onClick={() => setShowQRCode(false)}>
-                    Close
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </TooltipProvider>
     </AppContext.Provider>
   )
 }
 
-class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error: Error | null}> {
-  constructor(props: {children: React.ReactNode}) {
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode }) {
     super(props)
     this.state = { hasError: false, error: null }
   }
@@ -979,10 +376,7 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
               {this.state.error?.message || 'An unexpected error occurred'}
             </AlertDescription>
           </Alert>
-          <Button 
-            onClick={() => window.location.reload()} 
-            className="mt-4"
-          >
+          <Button onClick={() => window.location.reload()} className="mt-4">
             Reload Page
           </Button>
         </div>
@@ -999,5 +393,14 @@ export default function FacilitatorDashboardWrapper() {
     <ErrorBoundary>
       <FacilitatorDashboard />
     </ErrorBoundary>
-  );
+  )
+}
+
+/**
+ * Custom hook for managing meeting timer
+ * @param isActive - Boolean flag indicating if the timer should be running
+ * @returns Current duration in seconds
+ */
+const useMeetingTimer = (isActive: boolean) => {
+  // ... hook code
 }
