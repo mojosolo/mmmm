@@ -1,5 +1,5 @@
-import { FacilitatorDashboardComponent } from "@/components/facilitator-dashboard"
+import FacilitatorDashboardWrapper from '@/components/facilitator-dashboard';
 
 export default function Page() {
-  return <FacilitatorDashboardComponent />
+  return <FacilitatorDashboardWrapper />;
 }

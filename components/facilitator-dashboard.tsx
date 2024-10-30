@@ -17,9 +17,6 @@ import {
   Calendar,
   ChevronDown,
   MessageSquare,
-  ArrowLeft,
-  ThumbsUp,
-  Trash
 } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -427,7 +424,7 @@ const InsightsPanel = ({
   </ScrollArea>
 )
 
-const AgendaTimeline = ({ items, onNext }: { items: AgendaItem[], onNext: () => void }) => (
+const AgendaTimeline = ({ items }: { items: AgendaItem[] }) => (
   <div className="flex space-x-2">
     {items.map((item) => (
       <div
@@ -632,7 +629,7 @@ const MainContent = ({ selectedMeeting, meetingState, moveToNextAgendaItem, curr
     {/* Agenda Timeline */}
     <div className="bg-white shadow-md p-4 mb-4">
       <h3 className="text-lg font-semibold mb-2">Agenda</h3>
-      <AgendaTimeline items={selectedMeeting.agendaItems} onNext={moveToNextAgendaItem} />
+      <AgendaTimeline items={selectedMeeting.agendaItems} />
       {meetingState.status === 'in_progress' && (
         <Button onClick={moveToNextAgendaItem} className="mt-2" size="sm">
           Next Agenda Item
@@ -692,7 +689,6 @@ const MainContent = ({ selectedMeeting, meetingState, moveToNextAgendaItem, curr
 )
 
 function FacilitatorDashboard() {
-  const [meetings, setMeetings] = useState<Meeting[]>(mockMeetings)
   const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null)
   const [kanbanColumns, setKanbanColumns] = useState<KanbanColumn[]>(initialKanbanColumns)
   const [showQRCode, setShowQRCode] = useState(false)
@@ -709,7 +705,7 @@ function FacilitatorDashboard() {
     isLoading: false
   })
 
-  const selectedMeeting = useMemo(() => meetings.find(m => m.id === selectedMeetingId) || null, [meetings, selectedMeetingId])
+  const selectedMeeting = useMemo(() => mockMeetings.find(m => m.id === selectedMeetingId) || null, [selectedMeetingId])
   const meetingDuration = useMeetingTimer(meetingState.status === 'in_progress')
 
   const currentTranscriptItems = useMemo(() => {
@@ -743,7 +739,7 @@ function FacilitatorDashboard() {
     let timer: NodeJS.Timeout | null = null
     
     const simulateRealtimeUpdates = () => {
-      const meeting = meetings.find(m => m.id === selectedMeetingId)
+      const meeting = mockMeetings.find(m => m.id === selectedMeetingId)
       if (!meeting) return
 
       const currentAgendaItem = meeting.agendaItems[meetingState.currentAgendaItemIndex]
@@ -796,7 +792,7 @@ function FacilitatorDashboard() {
     return () => {
       if (timer) clearInterval(timer)
     }
-  }, [selectedMeetingId, meetingState.status, meetingState.currentAgendaItemIndex, meetings])
+  }, [selectedMeetingId, meetingState.status, meetingState.currentAgendaItemIndex, mockMeetings])
 
   const moveToNextAgendaItem = useCallback(() => {
     if (!selectedMeeting) return
@@ -884,14 +880,6 @@ function FacilitatorDashboard() {
       )
     )
   }, [])
-
-  const addInsightToKanban = useCallback((insightId: string, columnId: string) => {
-    if (!selectedMeeting) return
-    const insight = selectedMeeting.insights.find(item => item.id === insightId)
-    if (insight) {
-      addToKanban(columnId, insight.content)
-    }
-  }, [selectedMeeting, addToKanban])
 
   const openInsightModal = useCallback((insight: AIInsight) => {
     if (!selectedMeeting) return
@@ -1014,7 +1002,8 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
   }
 }
 
-export default function FacilitatorDashboardWrapper() {
+// Export the FacilitatorDashboard component
+export function FacilitatorDashboardComponent() {
   return (
     <ErrorBoundary>
       <FacilitatorDashboard />
