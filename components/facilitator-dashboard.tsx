@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useReducer, useMemo, useCallback, createContext, useContext } from 'react'
 import { 
   Clock, 
-  BarChart2, 
   QrCode,
   Plus,
   X,
@@ -14,14 +13,13 @@ import {
   Play,
   Loader2,
   Circle,
-  Users,
-  Menu,
   CheckCircle,
-  ChevronRight,
   Calendar,
   ChevronDown,
-  ChevronUp,
-  MessageSquare
+  MessageSquare,
+  ArrowLeft,
+  ThumbsUp,
+  Trash
 } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -34,12 +32,25 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from '@/components/ui/dialog'
+import { 
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger
+} from '@/components/ui/tabs'
+import { 
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger
+} from '@/components/ui/collapsible'
 
 // Constants and Configuration
 const MEETING_CONFIG = {
@@ -59,6 +70,13 @@ interface MeetingState {
   error: string | null
   isLoading: boolean
 }
+
+type MeetingAction =
+  | { type: 'START_MEETING' }
+  | { type: 'END_MEETING' }
+  | { type: 'SET_ERROR'; payload: string }
+  | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'NEXT_AGENDA_ITEM' }
 
 interface Meeting {
   id: string
@@ -95,6 +113,7 @@ interface AIInsight {
   timestamp: string
   agendaItemId: string
   chatThread: ChatMessage[]
+  agent: string
 }
 
 interface ChatMessage {
@@ -125,7 +144,7 @@ interface AppContextType {
   kanbanColumns: KanbanColumn[]
   setKanbanColumns: React.Dispatch<React.SetStateAction<KanbanColumn[]>>
   meetingState: MeetingState
-  dispatch: React.Dispatch<{ type: string; payload?: any }>
+  dispatch: React.Dispatch<MeetingAction>
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
@@ -138,69 +157,71 @@ const useAppContext = () => {
   return context
 }
 
-// Mock data (unchanged)
+// Mock data
 const mockParticipants: Participant[] = [
-  { id: "1", name: "John Doe", avatar: "/placeholder.svg?height=32&width=32" },
-  { id: "2", name: "Jane Smith", avatar: "/placeholder.svg?height=32&width=32" },
-  { id: "3", name: "Mike Johnson", avatar: "/placeholder.svg?height=32&width=32" },
-  { id: "4", name: "Emily Brown", avatar: "/placeholder.svg?height=32&width=32" },
-  { id: "5", name: "Alex Lee", avatar: "/placeholder.svg?height=32&width=32" },
+  { id: '1', name: 'John Doe', avatar: '/placeholder.svg?height=32&width=32' },
+  { id: '2', name: 'Jane Smith', avatar: '/placeholder.svg?height=32&width=32' },
+  { id: '3', name: 'Mike Johnson', avatar: '/placeholder.svg?height=32&width=32' },
+  { id: '4', name: 'Emily Brown', avatar: '/placeholder.svg?height=32&width=32' },
+  { id: '5', name: 'Alex Lee', avatar: '/placeholder.svg?height=32&width=32' }
 ]
 
 const mockMeetings: Meeting[] = [
   {
-    id: "1",
-    title: "Daily Scrum",
-    description: "Review progress and plan for the day",
+    id: '1',
+    title: 'Sprint Planning',
+    description: 'Plan the upcoming two-week sprint and assign tasks',
     startTime: null,
     endTime: null,
     agendaItems: [
-      { id: "1", title: "Yesterday's Progress", duration: 5, status: 'not_started' },
-      { id: "2", title: "Today's Plan", duration: 5, status: 'not_started' },
-      { id: "3", title: "Blockers", duration: 5, status: 'not_started' },
+      { id: '1', title: 'Sprint Goal Discussion', duration: 15, status: 'not_started' },
+      { id: '2', title: 'Backlog Refinement', duration: 30, status: 'not_started' },
+      { id: '3', title: 'Task Estimation', duration: 30, status: 'not_started' },
+      { id: '4', title: 'Capacity Planning', duration: 15, status: 'not_started' }
     ],
     transcriptItems: [],
     insights: [],
-    participants: mockParticipants,
+    participants: mockParticipants
   },
   {
-    id: "2",
-    title: "Sprint Planning",
-    description: "Plan the upcoming sprint",
+    id: '2',
+    title: 'Product Roadmap Review',
+    description: 'Quarterly review of the product roadmap and upcoming features',
     startTime: null,
     endTime: null,
     agendaItems: [
-      { id: "1", title: "Sprint Goal", duration: 15, status: 'not_started' },
-      { id: "2", title: "Backlog Refinement", duration: 30, status: 'not_started' },
-      { id: "3", title: "Capacity Planning", duration: 15, status: 'not_started' },
+      { id: '1', title: 'Q1 Recap', duration: 20, status: 'not_started' },
+      { id: '2', title: 'Q2 Goals and OKRs', duration: 25, status: 'not_started' },
+      { id: '3', title: 'Feature Prioritization', duration: 30, status: 'not_started' },
+      { id: '4', title: 'Resource Allocation', duration: 15, status: 'not_started' }
     ],
     transcriptItems: [],
     insights: [],
-    participants: mockParticipants,
-  },
+    participants: mockParticipants
+  }
 ]
 
 const initialKanbanColumns: KanbanColumn[] = [
-  { id: "1", title: "To Do", items: [] },
-  { id: "2", title: "In Progress", items: [] },
-  { id: "3", title: "Done", items: [] },
+  { id: '1', title: 'To Do', items: [] },
+  { id: '2', title: 'In Progress', items: [] },
+  { id: '3', title: 'Done', items: [] }
 ]
 
 // Custom Hooks
 const useMeetingTimer = (isActive: boolean) => {
-  const [duration, setDuration] = useState(MEETING_CONFIG.DEFAULT_DURATION)
-  
+  const [duration, setDuration] = useState<number>(MEETING_CONFIG.DEFAULT_DURATION)
+
   useEffect(() => {
     if (!isActive) return
-    const timer = setInterval(() => setDuration(prev => prev + 1), 1000)
+    const timer = setInterval(() => setDuration((prev) => prev + 1), 1000)
     return () => clearInterval(timer)
   }, [isActive])
-  
+
   return duration
 }
 
 // Reducer for complex state management
-const meetingReducer = (state: MeetingState, action: { type: string; payload?: any }): MeetingState => {
+const meetingReducer = (state: MeetingState, action: MeetingAction): MeetingState => {
   switch (action.type) {
     case 'START_MEETING':
       return { ...state, status: 'in_progress', isLoading: false }
@@ -226,22 +247,28 @@ const formatTime = (seconds: number) => {
 
 const generateRealisticScrumContent = (agendaItem: string): string => {
   const possibilities = [
-    `Discussed progress on ${agendaItem}.`,
-    `Identified a blocker for ${agendaItem}.`,
-    `Planned the next steps for ${agendaItem}.`,
-    `Reviewed the results of ${agendaItem}.`,
-    `Discussed potential solutions for ${agendaItem}.`,
+    `For ${agendaItem}, we need to consider the impact on our current sprint velocity.`,
+    `I suggest we break down ${agendaItem} into smaller, more manageable tasks.`,
+    `We should prioritize ${agendaItem} based on its potential ROI and alignment with our quarterly goals.`,
+    `Let's discuss any potential blockers or dependencies for ${agendaItem}.`,
+    `We might need additional resources or expertise to complete ${agendaItem} effectively.`,
+    `I propose we use the MoSCoW method to prioritize the features within ${agendaItem}.`,
+    `We should consider the technical debt implications of ${agendaItem}.`,
+    `For ${agendaItem}, let's ensure we have clear acceptance criteria defined.`
   ]
   return possibilities[Math.floor(Math.random() * possibilities.length)]
 }
 
 const generateAIInsight = (agendaItem: string): string => {
   const possibilities = [
-    `Consider prioritizing ${agendaItem} to mitigate risks.`,
-    `The team's progress on ${agendaItem} is on track.`,
-    `Ensure sufficient resources are allocated to ${agendaItem}.`,
-    `Further investigation is needed for ${agendaItem}.`,
-    `The team should focus on completing ${agendaItem} before moving on.`,
+    `Based on the discussion around ${agendaItem}, there seems to be a need for more cross-team collaboration. Consider scheduling a workshop to align all stakeholders.`,
+    `The complexity of ${agendaItem} might be underestimated. It's recommended to conduct a technical spike to better understand the implementation challenges.`,
+    `There's a potential risk of scope creep in ${agendaItem}. Suggest clearly defining the MVP and creating a separate backlog for future enhancements.`,
+    `The team's velocity might be impacted by ${agendaItem}. Consider adjusting the sprint commitment or allocating additional resources to maintain productivity.`,
+    `${agendaItem} presents an opportunity for improving our CI/CD pipeline. Recommend investigating automation possibilities to streamline the delivery process.`,
+    `Based on previous similar tasks, ${agendaItem} might benefit from pair programming to ensure knowledge sharing and code quality.`,
+    `The discussion around ${agendaItem} indicates a need for user research. Consider conducting user interviews or A/B testing to validate assumptions.`,
+    `To mitigate risks associated with ${agendaItem}, it's advisable to create a detailed implementation plan with clear milestones and checkpoints.`
   ]
   return possibilities[Math.floor(Math.random() * possibilities.length)]
 }
@@ -669,7 +696,6 @@ function FacilitatorDashboard() {
   const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null)
   const [kanbanColumns, setKanbanColumns] = useState<KanbanColumn[]>(initialKanbanColumns)
   const [showQRCode, setShowQRCode] = useState(false)
-  const [showKanban, setShowKanban] = useState(false)
   const [aiPrompt, setAiPrompt] = useState("")
   
   const [selectedInsight, setSelectedInsight] = useState<AIInsight | null>(null)
@@ -747,6 +773,7 @@ function FacilitatorDashboard() {
               timestamp: new Date().toLocaleTimeString(),
               agendaItemId: currentAgendaItem.id,
               chatThread: [],
+              agent: 'AI',
             }
             newTranscriptItem.aiInsight = aiInsight
             updatedMeeting.insights = [...updatedMeeting.insights, aiInsight]
@@ -769,7 +796,7 @@ function FacilitatorDashboard() {
     return () => {
       if (timer) clearInterval(timer)
     }
-  }, [selectedMeetingId, meetingState.status, meetingState.currentAgendaItemIndex])
+  }, [selectedMeetingId, meetingState.status, meetingState.currentAgendaItemIndex, meetings])
 
   const moveToNextAgendaItem = useCallback(() => {
     if (!selectedMeeting) return
@@ -789,23 +816,6 @@ function FacilitatorDashboard() {
     }))
   }, [selectedMeeting, meetingState.currentAgendaItemIndex])
 
-  const addActionItem = useCallback((description: string = "New action item") => {
-    if (!selectedMeeting) return
-    const newInsight: AIInsight = {
-      id: Date.now().toString(),
-      content: description,
-      type: 'plan',
-      timestamp: new Date().toLocaleTimeString(),
-      agendaItemId: selectedMeeting.agendaItems[meetingState.currentAgendaItemIndex].id,
-      chatThread: [],
-    }
-    setMeetings(prevMeetings => prevMeetings.map(meeting => 
-      meeting.id === selectedMeeting.id
-        ? { ...meeting, insights: [...meeting.insights, newInsight] }
-        : meeting
-    ))
-  }, [selectedMeeting, meetingState.currentAgendaItemIndex])
-
   const handleAIPrompt = useCallback((e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedMeeting || !aiPrompt.trim()) return
@@ -817,6 +827,7 @@ function FacilitatorDashboard() {
       timestamp: new Date().toLocaleTimeString(),
       agendaItemId: selectedMeeting.agendaItems[meetingState.currentAgendaItemIndex].id,
       chatThread: [],
+      agent: 'AI',
     }
     setMeetings(prevMeetings => prevMeetings.map(meeting => 
       meeting.id === selectedMeeting.id
@@ -1003,10 +1014,10 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
   }
 }
 
-export function FacilitatorDashboardComponent() {
+export default function FacilitatorDashboardWrapper() {
   return (
     <ErrorBoundary>
       <FacilitatorDashboard />
     </ErrorBoundary>
-  )
+  );
 }
