@@ -41,7 +41,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 
@@ -130,7 +129,7 @@ interface AppContextType {
   kanbanColumns: KanbanColumn[]
   setKanbanColumns: React.Dispatch<React.SetStateAction<KanbanColumn[]>>
   meetingState: MeetingState
-  dispatch: React.Dispatch<{ type: string; payload?: any }>
+  dispatch: React.Dispatch<MeetingAction>
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
@@ -195,7 +194,7 @@ const initialKanbanColumns: KanbanColumn[] = [
 
 // Custom Hooks
 const useMeetingTimer = (isActive: boolean) => {
-  const [duration, setDuration] = useState(MEETING_CONFIG.DEFAULT_DURATION)
+  const [duration, setDuration] = useState<number>(MEETING_CONFIG.DEFAULT_DURATION)
   
   useEffect(() => {
     if (!isActive) return
@@ -207,7 +206,7 @@ const useMeetingTimer = (isActive: boolean) => {
 }
 
 // Reducer for complex state management
-const meetingReducer = (state: MeetingState, action: { type: string; payload?: any }): MeetingState => {
+const meetingReducer = (state: MeetingState, action: MeetingAction): MeetingState => {
   switch (action.type) {
     case 'START_MEETING':
       return { ...state, status: 'in_progress', isLoading: false }
@@ -219,8 +218,6 @@ const meetingReducer = (state: MeetingState, action: { type: string; payload?: a
       return { ...state, isLoading: action.payload }
     case 'NEXT_AGENDA_ITEM':
       return { ...state, currentAgendaItemIndex: state.currentAgendaItemIndex + 1 }
-    default:
-      return state
   }
 }
 
