@@ -689,67 +689,68 @@ const MainContent = ({ selectedMeeting, meetingState, moveToNextAgendaItem, curr
 )
 
 function FacilitatorDashboard() {
-  const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null)
-  const [kanbanColumns, setKanbanColumns] = useState<KanbanColumn[]>(initialKanbanColumns)
-  const [showQRCode, setShowQRCode] = useState(false)
-  const [aiPrompt, setAiPrompt] = useState("")
+  const [meetings, setMeetings] = useState<Meeting[]>(mockMeetings);
+  const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null);
+  const [kanbanColumns, setKanbanColumns] = useState<KanbanColumn[]>(initialKanbanColumns);
+  const [showQRCode, setShowQRCode] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
   
-  const [selectedInsight, setSelectedInsight] = useState<AIInsight | null>(null)
-  const [insightContext, setInsightContext] = useState<TranscriptItem[]>([])
+  const [selectedInsight, setSelectedInsight] = useState<AIInsight | null>(null);
+  const [insightContext, setInsightContext] = useState<TranscriptItem[]>([]);
 
   const [meetingState, dispatch] = useReducer(meetingReducer, {
     status: 'not_started',
     duration: MEETING_CONFIG.DEFAULT_DURATION,
     currentAgendaItemIndex: 0,
     error: null,
-    isLoading: false
-  })
+    isLoading: false,
+  });
 
-  const selectedMeeting = useMemo(() => mockMeetings.find(m => m.id === selectedMeetingId) || null, [selectedMeetingId])
-  const meetingDuration = useMeetingTimer(meetingState.status === 'in_progress')
+  const selectedMeeting = useMemo(() => meetings.find(m => m.id === selectedMeetingId) || null, [meetings, selectedMeetingId]);
+  const meetingDuration = useMeetingTimer(meetingState.status === 'in_progress');
 
   const currentTranscriptItems = useMemo(() => {
-    if (!selectedMeeting?.agendaItems?.[meetingState.currentAgendaItemIndex]) return []
+    if (!selectedMeeting?.agendaItems?.[meetingState.currentAgendaItemIndex]) return [];
     return selectedMeeting.transcriptItems.filter(
       item => item.agendaItemId === selectedMeeting.agendaItems[meetingState.currentAgendaItemIndex].id
-    )
-  }, [selectedMeeting, meetingState.currentAgendaItemIndex])
+    );
+  }, [selectedMeeting, meetingState.currentAgendaItemIndex]);
 
   const currentInsights = useMemo(() => {
-    if (!selectedMeeting?.agendaItems?.[meetingState.currentAgendaItemIndex]) return []
+    if (!selectedMeeting?.agendaItems?.[meetingState.currentAgendaItemIndex]) return [];
     return selectedMeeting.insights.filter(
       insight => insight.agendaItemId === selectedMeeting.agendaItems[meetingState.currentAgendaItemIndex].id
-    )
-  }, [selectedMeeting, meetingState.currentAgendaItemIndex])
+    );
+  }, [selectedMeeting, meetingState.currentAgendaItemIndex]);
 
   const getInsightIcon = useCallback((type: InsightType | undefined) => {
     switch (type) {
       case 'think':
-        return <Brain className="h-5 w-5 text-purple-500" />
+        return <Brain className="h-5 w-5 text-purple-500" />;
       case 'reflect':
-        return <Lightbulb className="h-5 w-5 text-yellow-500" />
+        return <Lightbulb className="h-5 w-5 text-yellow-500" />;
       case 'plan':
-        return <Flag className="h-5 w-5 text-blue-500" />
+        return <Flag className="h-5 w-5 text-blue-500" />;
       default:
-        return null
+        return null;
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
-    let timer: NodeJS.Timeout | null = null
+    let timer: NodeJS.Timeout | null = null;
     
     const simulateRealtimeUpdates = () => {
-      const meeting = mockMeetings.find(m => m.id === selectedMeetingId)
-      if (!meeting) return
+      const meeting = meetings.find(m => m.id === selectedMeetingId);
+      if (!meeting) return;
 
-      const currentAgendaItem = meeting.agendaItems[meetingState.currentAgendaItemIndex]
-      if (!currentAgendaItem) return
+      const currentAgendaItem = meeting.agendaItems[meetingState.currentAgendaItemIndex];
+      if (!currentAgendaItem) return;
 
       setMeetings(prevMeetings => {
         const updatedMeetings = prevMeetings.map(meetingItem => {
-          if (meetingItem.id !== selectedMeetingId) return meetingItem
+          if (meetingItem.id !== selectedMeetingId) return meetingItem;
 
-          const updatedMeeting = { ...meetingItem }
+          const updatedMeeting = { ...meetingItem };
 
           // Simulate new transcript item
           const newTranscriptItem: TranscriptItem = {
@@ -758,7 +759,7 @@ function FacilitatorDashboard() {
             content: generateRealisticScrumContent(currentAgendaItem.title),
             timestamp: new Date().toLocaleTimeString(),
             agendaItemId: currentAgendaItem.id,
-          }
+          };
 
           // Simulate AI insight (less frequently)
           if (Math.random() > 0.7) {
@@ -770,29 +771,29 @@ function FacilitatorDashboard() {
               agendaItemId: currentAgendaItem.id,
               chatThread: [],
               agent: 'AI',
-            }
-            newTranscriptItem.aiInsight = aiInsight
-            updatedMeeting.insights = [...updatedMeeting.insights, aiInsight]
+            };
+            newTranscriptItem.aiInsight = aiInsight;
+            updatedMeeting.insights = [...updatedMeeting.insights, aiInsight];
           }
 
-          updatedMeeting.transcriptItems = [...updatedMeeting.transcriptItems, newTranscriptItem]
+          updatedMeeting.transcriptItems = [...updatedMeeting.transcriptItems, newTranscriptItem];
 
-          return updatedMeeting
-        })
+          return updatedMeeting;
+        });
 
-        return updatedMeetings
-      })
-    }
+        return updatedMeetings;
+      });
+    };
 
     if (selectedMeetingId && meetingState.status === 'in_progress') {
-      simulateRealtimeUpdates() // Initial update
-      timer = setInterval(simulateRealtimeUpdates, MEETING_CONFIG.UPDATE_INTERVAL)
+      simulateRealtimeUpdates(); // Initial update
+      timer = setInterval(simulateRealtimeUpdates, MEETING_CONFIG.UPDATE_INTERVAL);
     }
 
     return () => {
-      if (timer) clearInterval(timer)
-    }
-  }, [selectedMeetingId, meetingState.status, meetingState.currentAgendaItemIndex, mockMeetings])
+      if (timer) clearInterval(timer);
+    };
+  }, [selectedMeetingId, meetingState.status, meetingState.currentAgendaItemIndex, meetings]);
 
   const moveToNextAgendaItem = useCallback(() => {
     if (!selectedMeeting) return
@@ -870,16 +871,6 @@ function FacilitatorDashboard() {
       dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Failed to end meeting' })
     }
   }, [selectedMeeting])
-
-  const addToKanban = useCallback((columnId: string, content: string) => {
-    setKanbanColumns(prevColumns => 
-      prevColumns.map(col =>
-        col.id === columnId
-          ? { ...col, items: [...col.items, { id: Date.now().toString(), content }] }
-          : col
-      )
-    )
-  }, [])
 
   const openInsightModal = useCallback((insight: AIInsight) => {
     if (!selectedMeeting) return
@@ -1002,8 +993,8 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
   }
 }
 
-// Export the FacilitatorDashboard component
-export function FacilitatorDashboardComponent() {
+// Export FacilitatorDashboardWrapper as a default export
+export default function FacilitatorDashboardWrapper() {
   return (
     <ErrorBoundary>
       <FacilitatorDashboard />
